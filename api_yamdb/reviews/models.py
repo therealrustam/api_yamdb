@@ -5,6 +5,10 @@ CustomUser = get_user_model()
 choices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ]
 
 
+class Title(models.Model):
+    text = models.TextField()
+
+
 class Review(models.Model):
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews'
