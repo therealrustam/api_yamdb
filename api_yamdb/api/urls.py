@@ -7,8 +7,8 @@ app_name = 'api'
 router = DefaultRouter()
 router1 = DefaultRouter()
 
-router.register('reviews', ReviewViewSet)
-router1.register('comments', CommentViewSet)
+router.register('reviews', ReviewViewSet, basename='reviews')
+router1.register('comments', CommentViewSet, basename='comments')
 
 urlpatterns = [
     path('v1/titles/<int:title_id>/', include(router.urls)),
