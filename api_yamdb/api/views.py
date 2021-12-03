@@ -1,16 +1,17 @@
 from rest_framework import viewsets
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from reviews.models import Comment, Review, Title
 
-from .permissions import AuthorPermission
+from .permissions import ModeratorOrReadOnly
 from .serializers import CommentSerializer, ReviewSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [AuthorPermission, IsAuthenticated, IsAdminUser]
+    permission_classes = [ModeratorOrReadOnly, ]
     http_method_names = ['get', 'post', 'patch', 'delete']
+    pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -24,8 +25,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [AuthorPermission, IsAuthenticated, IsAdminUser]
+    permission_classes = [ModeratorOrReadOnly, ]
     http_method_names = ['get', 'post', 'patch', 'delete']
+    pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
