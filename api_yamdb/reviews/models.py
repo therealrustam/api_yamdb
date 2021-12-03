@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class Categories(models.Model):
+class Category(models.Model):
     name = models.CharField(
         max_length=256,
     )
@@ -14,7 +14,7 @@ class Categories(models.Model):
         return self.name
 
 
-class Genres(models.Model):
+class Genre(models.Model):
     name = models.CharField(
         max_length=256,
     )
@@ -27,7 +27,7 @@ class Genres(models.Model):
         return self.name
 
 
-class Titles(models.Model):
+class Title(models.Model):
     name = models.CharField(
         max_length=256,
     )
@@ -38,12 +38,12 @@ class Titles(models.Model):
         blank=True,
     )
     genre = models.ForeignKey(
-        Genres,
+        Genre,
         on_delete=models.CASCADE,
         related_name='title',
     )
     category = models.ForeignKey(
-        Categories,
+        Category,
         on_delete=models.CASCADE,
         related_name='title',
     )

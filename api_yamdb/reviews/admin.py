@@ -1,8 +1,8 @@
 from django.contrib import admin
-from reviews.models import Categories, Genres, Titles
+from reviews.models import Category, Genre, Title
 
 
-class CategoriesAdmin(admin.ModelAdmin):
+class CategoryAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'slug')
     search_fields = ('name',)
     empty_value_display = '-пусто-'
@@ -10,7 +10,7 @@ class CategoriesAdmin(admin.ModelAdmin):
     list_editable = ('name',)
 
 
-class GenresAdmin(admin.ModelAdmin):
+class GenreAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'slug')
     search_fields = ('name',)
     empty_value_display = '-пусто-'
@@ -18,13 +18,13 @@ class GenresAdmin(admin.ModelAdmin):
     list_editable = ('name',)
 
 
-class TitlesAdmin(admin.ModelAdmin):
+class TitleAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'year', 'description', 'genre', 'category',)
     search_fields = ('name',)
     empty_value_display = '-пусто-'
     list_filter = ('name', 'year', 'genre', 'category',)
 
 
-admin.site.register(Categories, CategoriesAdmin)
-admin.site.register(Genres, GenresAdmin)
-admin.site.register(Titles, TitlesAdmin)
+admin.site.register(Category, CategoryAdmin)
+admin.site.register(Genre, GenreAdmin)
+admin.site.register(Title, TitleAdmin)

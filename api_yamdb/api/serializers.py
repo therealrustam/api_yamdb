@@ -1,30 +1,32 @@
 import datetime as dt
 
+from django.db.models.aggregates import Avg
 from rest_framework import serializers
-from reviews.models import Categories, Genres, Titles
+from reviews.models import Category, Genre, Title
 
 
-class CategoriesSerializer(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('name', 'slug',)
-        model = Categories
+        model = Category
         lookup_field = 'slug'
 
 
-class GenresSerializer(serializers.ModelSerializer):
+class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('name', 'slug',)
-        model = Genres
+        model = Genre
         lookup_field = 'slug'
 
 
-class TitlesSerializer(serializers.ModelSerializer):
+class TitleSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(slug_field='slug', read_only=True)
     category = serializers.SlugRelatedField(slug_field='slug', read_only=True)
+    rating = serializers.SerializerMethodField()
 
     class Meta:
-        fields = ('name', 'year', 'description', 'genre', 'category',)
-        model = Titles
+        fields = ('name', 'year', 'rating', 'description', 'genre', 'category')
+        model = Title
 
         def validate(self, data):
             year = data.get('year')
@@ -32,3 +34,6 @@ class TitlesSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Нельзя указать будущую дату'
                 )
+
+        def get_rating(self, obj):
+            return int(Review.objects.filter(id__title=obj.id).aggregate(Avg('score')).values())
