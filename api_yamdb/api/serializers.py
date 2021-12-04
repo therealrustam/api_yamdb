@@ -55,13 +55,14 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    genre = serializers.SlugRelatedField(slug_field='slug', read_only=True)
-    category = serializers.SlugRelatedField(slug_field='slug', read_only=True)
+    genre = serializers.SlugRelatedField(
+        slug_field='slug', read_only=True, many=True,)
+    category = serializers.SlugRelatedField(
+        slug_field='slug', read_only=True,)
     rating = serializers.SerializerMethodField()
 
     class Meta:
         fields = ('name', 'year', 'rating', 'description', 'genre', 'category')
-
         model = Title
 
         def validate(self, data):
