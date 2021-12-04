@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-from api.permissions import AdminOrReadOnly, IsAdmin
-from api.serializers import (CategorySerializer, CustomUserSerializer,
-                             GenreSerializer, TitleSerializer)
+
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -9,13 +6,21 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Genre, Title
+from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import CustomUser
+
+from api.permissions import AdminOrReadOnly, IsAdmin
+from api.serializers import (CategorySerializer, CustomUserSerializer,
+                             GenreSerializer, TitleSerializer)
+
+from .permissions import ModeratorOrReadOnly
+from .serializers import CommentSerializer, ReviewSerializer
 
 USER_ERROR = {
     'error': 'Пользователь с таким email уже существует!'
@@ -124,14 +129,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('category', 'genre', 'name', 'year')
-=======
-from rest_framework import viewsets
-from rest_framework.generics import get_object_or_404
-from rest_framework.pagination import PageNumberPagination
-from reviews.models import Comment, Review, Title
-
-from .permissions import ModeratorOrReadOnly
-from .serializers import CommentSerializer, ReviewSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -164,4 +161,3 @@ class CommentViewSet(viewsets.ModelViewSet):
         review = get_object_or_404(Review, id=review_id)
         new_queryset = Comment.objects.filter(review_id=review.id)
         return new_queryset
->>>>>>> rustam
