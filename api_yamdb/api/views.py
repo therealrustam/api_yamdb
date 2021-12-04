@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from api.permissions import AdminOrReadOnly, IsAdmin
 from api.serializers import (CategorySerializer, CustomUserSerializer,
                              GenreSerializer, TitleSerializer)
@@ -123,3 +124,44 @@ class TitleViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('category', 'genre', 'name', 'year')
+=======
+from rest_framework import viewsets
+from rest_framework.generics import get_object_or_404
+from rest_framework.pagination import PageNumberPagination
+from reviews.models import Comment, Review, Title
+
+from .permissions import ModeratorOrReadOnly
+from .serializers import CommentSerializer, ReviewSerializer
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [ModeratorOrReadOnly, ]
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    pagination_class = PageNumberPagination
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        title_id = self.kwargs.get('title_id')
+        title = get_object_or_404(Title, id=title_id)
+        new_queryset = Review.objects.filter(title_id=title.id)
+        return new_queryset
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [ModeratorOrReadOnly, ]
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    pagination_class = PageNumberPagination
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        review_id = self.kwargs.get('review_id')
+        review = get_object_or_404(Review, id=review_id)
+        new_queryset = Comment.objects.filter(review_id=review.id)
+        return new_queryset
+>>>>>>> rustam

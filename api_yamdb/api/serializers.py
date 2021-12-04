@@ -1,3 +1,4 @@
+from reviews.models import Comment, Review, Title
 import datetime as dt
 
 from django.db.models.aggregates import Avg
@@ -60,6 +61,7 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = ('name', 'year', 'rating', 'description', 'genre', 'category')
+
         model = Title
 
         def validate(self, data):
@@ -69,5 +71,23 @@ class TitleSerializer(serializers.ModelSerializer):
                     'Нельзя указать будущую дату'
                 )
 
-        def get_rating(self, obj):
-            return int(Review.objects.filter(id__title=obj.id).aggregate(Avg('score')).values())
+    def get_rating(self, obj):
+        return int(Review.objects.filter(id__title=obj.id).aggregate(Avg('score')).values())
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True, required=False, slug_field='username')
+
+    class Meta:
+        model = Review
+        fields = '__all__'
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True, required=False, slug_field='username')
+
+    class Meta:
+        model = Comment
+        fields = '__all__'
