@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from users.models import CustomUser
 
@@ -33,6 +34,7 @@ class Title(models.Model):
         max_length=256,
     )
     year = models.DateField()
+    rating = models.IntegerField()
     description = models.CharField(
         max_length=1000,
         null=True,
@@ -61,7 +63,12 @@ class Review(models.Model):
     author = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, related_name='reviews'
     )
-    score = models.IntegerField(range(1, 11, 1))
+    score = models.IntegerField(
+        validators=(
+            MinValueValidator(1),
+            MaxValueValidator(10)
+        ),
+    )
     pub_date = models.DateTimeField(
         'Дата публикации', auto_now_add=True
     )

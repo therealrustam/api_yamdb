@@ -23,7 +23,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'bio',
-            'role'
+            'role',
         )
         model = CustomUser
         extra_kwargs = {
@@ -54,26 +54,39 @@ class GenreSerializer(serializers.ModelSerializer):
         lookup_field = 'slug'
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    genre = serializers.SlugRelatedField(
-        slug_field='slug', read_only=True, many=True,)
-    category = serializers.SlugRelatedField(
-        slug_field='slug', read_only=True,)
-    rating = serializers.SerializerMethodField()
+class TitleReadSerializer(serializers.ModelSerializer):
+    genre = GenreSerializer(many=True,)
+    category = CategorySerializer()
+    rating = serializers.SerializerMethodField(required=False)
 
     class Meta:
-        fields = ('name', 'year', 'rating', 'description', 'genre', 'category')
+        fields = ('name', 'year', 'rating',
+                  'description', 'genre', 'category',)
         model = Title
-
-        def validate(self, data):
-            year = data.get('year')
-            if year > dt.date.today().year:
-                raise serializers.ValidationError(
-                    'Нельзя указать будущую дату'
-                )
 
     def get_rating(self, obj):
         return int(Review.objects.filter(id__title=obj.id).aggregate(Avg('score')).values())
+
+
+class TitleWriteSerializer(serializers.ModelSerializer):
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(),
+        slug_field='slug', many=True,)
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        slug_field='slug', )
+
+    class Meta:
+        fields = ('name', 'year',
+                  'description', 'genre', 'category',)
+        model = Title
+
+    def validate(self, data):
+        year = data.get('year')
+        if year > dt.date.today().year:
+            raise serializers.ValidationError(
+                'Нельзя указать будущую дату'
+            )
 
 
 class ReviewSerializer(serializers.ModelSerializer):

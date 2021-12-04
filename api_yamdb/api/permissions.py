@@ -8,6 +8,9 @@ class AdminOrReadOnly(permissions.BasePermission):
             or request.user.role == 'admin'
         )
 
+    def has_object_permission(self, request, view, obj):
+        return request.user.role == 'admin'
+
 
 class IsAuthorOrStaff(permissions.BasePermission):
 
@@ -30,3 +33,6 @@ class ModeratorOrReadOnly(permissions.BasePermission):
             request.method in permissions.SAFE_METHODS
             or request.user.role == 'moderator'
         )
+
+    def has_object_permission(self, request, view, obj):
+        return request.user.role == 'moderator'

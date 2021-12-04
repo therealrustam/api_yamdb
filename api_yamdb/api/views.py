@@ -2,9 +2,10 @@
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.http import request
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
@@ -17,7 +18,7 @@ from users.models import CustomUser
 
 from api.permissions import AdminOrReadOnly, IsAdmin
 from api.serializers import (CategorySerializer, CustomUserSerializer,
-                             GenreSerializer, TitleSerializer)
+                             GenreSerializer, TitleReadSerializer, TitleWriteSerializer)
 
 from .permissions import ModeratorOrReadOnly
 from .serializers import CommentSerializer, ReviewSerializer
@@ -112,6 +113,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOrReadOnly,)
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('name',)
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -120,15 +123,21 @@ class GenreViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOrReadOnly,)
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('name',)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    serializer_class = TitleSerializer
     permission_classes = (AdminOrReadOnly,)
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('category', 'genre', 'name', 'year')
+
+    def get_serializer_class(self):
+        if self.action == 'list' or 'retrieve':
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
