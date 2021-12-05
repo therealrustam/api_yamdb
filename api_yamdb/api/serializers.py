@@ -2,8 +2,8 @@ import datetime as dt
 
 from django.db.models.aggregates import Avg
 from rest_framework import serializers
-from reviews.models import Category, Comment, Genre, Review, Title
-from reviews.models import User
+from rest_framework.validators import UniqueTogetherValidator
+from reviews.models import Category, Comment, Genre, Review, Title, User
 
 ERROR_CHANGE_ROLE = {
     'role': 'Невозможно изменить роль пользователя.'
@@ -108,14 +108,11 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = '__all__'
-
-        def validate(self, data):
-            if self.context['request'].method == 'POST':
-                user = self.context['request'].user
-                title_id = self.context['view'].kwargs.get('title_id')
-                if Review.objects.filter(author=user, title_id=title_id):
-                    raise serializers.ValidationError(NOT_ALLOWED)
-            return data
+        validators = [UniqueTogetherValidator(
+            queryset=Review.objects.all(),
+            fields=['title', 'author']), ]
+        extra_kwargs = {'text': {'required': True}}
+        extra_kwargs = {'score': {'required': True}}
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -135,3 +132,4 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
+        extra_kwargs = {'text': {'required': True}}

@@ -6,41 +6,24 @@ from django.db import models
 
 
 class User(AbstractUser):
-    USER_ROLES = [
-        ('Admin', 'Администратор'),
-        ('Moderator', 'Модератор'),
-        ('User', 'Пользователь'),
+    USER = 'user'
+    MODERATOR = 'moderator'
+    ADMIN = 'admin'
+    ROLE_CHOISES = [
+        (USER, 'user'),
+        (MODERATOR, 'moderator'),
+        (ADMIN, 'admin')
     ]
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username',)
-
-    username = models.CharField(max_length=150, unique=True,)
-
-    email = models.EmailField(
-        'Адрес электронной почты',
-        unique=True,
+    bio = models.TextField(
+        verbose_name='Биография',
         blank=True,
-        max_length=254,
-    )
-    bio = models.CharField(
-        'Информация о себе',
-        max_length=500,
         null=True,
-        blank=True
     )
-    role = models.CharField(
-        'Роль пользователя',
-        max_length=20,
-        choices=USER_ROLES,
-        default='user'
-    )
-    confirmation_code = models.TextField(
-        'Код подтверждения',
-        max_length=100,
-        default=uuid.uuid4,
-        null=True,
-        editable=False
+    role = models.TextField(
+        choices=ROLE_CHOISES,
+        default=USER,
+        blank=False,
     )
 
     @property
