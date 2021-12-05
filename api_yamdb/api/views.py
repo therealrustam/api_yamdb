@@ -12,15 +12,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Comment, Genre, Review, Title
-from reviews.models import User
+from reviews.models import Category, Comment, Genre, Review, Title, User
 
-from api.permissions import AdminOrReadOnly, IsAdmin
-from api.serializers import (CategorySerializer, CustomUserSerializer,
-                             GenreSerializer, TitleReadSerializer, TitleWriteSerializer,)
-
-from .permissions import ModeratorOrReadOnly
-from .serializers import CommentSerializer, ReviewSerializer
+from .permissions import AdminOrReadOnly, IsAdmin, ModeratorOrReadOnly
+from .serializers import (CategorySerializer, CommentSerializer,
+                          CustomUserSerializer, GenreSerializer,
+                          RegisterSerializer, ReviewSerializer,
+                          TitleReadSerializer, TitleWriteSerializer,
+                          TokenSerializer)
 
 USER_ERROR = {
     'error': 'Пользователь с таким email уже существует!'
@@ -39,6 +38,8 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     lookup_field = 'username'
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('username',)
 
     @action(detail=False, methods=['get', 'patch'],
             permission_classes=[IsAuthenticated])
@@ -68,6 +69,7 @@ def get_tokens_for_user(user):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
 
     def post(self, request):
         email = request.data.get('email')
@@ -77,7 +79,7 @@ class RegisterView(APIView):
                 USER_ERROR, status=status.HTTP_400_BAD_REQUEST
             )
         user = User.objects.create_user(
-            username=email, email=email, password=None
+            username=email, email=email, password=None,
         )
         confirmation_code = default_token_generator.make_token(user)
         send_mail(
@@ -91,11 +93,12 @@ class RegisterView(APIView):
 
 class JWTTokenView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = TokenSerializer
 
     def post(self, request):
-        email = request.data['email']
+        username = request.data['username']
         confirmation_code = request.data['confirmation_code']
-        user = get_object_or_404(User, email=email)
+        user = get_object_or_404(User, username=username)
         if not default_token_generator.check_token(
             user, confirmation_code
         ):

@@ -15,10 +15,13 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username',)
 
+    username = models.CharField(max_length=150, unique=True,)
+
     email = models.EmailField(
         'Адрес электронной почты',
         unique=True,
-        blank=True
+        blank=True,
+        max_length=254,
     )
     bio = models.CharField(
         'Информация о себе',
@@ -87,7 +90,8 @@ class Title(models.Model):
         max_length=256,
     )
     year = models.IntegerField()
-    rating = models.IntegerField(default=1)
+    rating = models.IntegerField(null=True,
+                                 blank=True,)
     description = models.TextField(null=True,
                                    blank=True,)
     genre = models.ManyToManyField(

@@ -131,7 +131,8 @@ class Test00UserRegistration:
             'username': valid_username
         }
         request_type = 'POST'
-        response = admin_client.post(self.url_admin_create_user, data=valid_data)
+        response = admin_client.post(
+            self.url_admin_create_user, data=valid_data)
         outbox_after = mail.outbox
 
         assert response.status_code != 404, (

@@ -29,14 +29,24 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'users': {'lookup_field': 'username'}
         }
 
-    def validate(self, data):
-        user = self.context['request'].user
-        if not user.is_admin:
-            if data.get('role'):
-                raise serializers.ValidationError(ERROR_CHANGE_ROLE)
-            if data.get('email'):
-                raise serializers.ValidationError(ERROR_CHANGE_EMAIL)
-        return data
+        def validate(self, data):
+            user = self.context['request'].user
+            if not user.is_admin:
+                if data.get('role'):
+                    raise serializers.ValidationError(ERROR_CHANGE_ROLE)
+                if data.get('email'):
+                    raise serializers.ValidationError(ERROR_CHANGE_EMAIL)
+            return data
+
+
+class TokenSerializer(serializers.Serializer):
+    class Meta:
+        fields = ('username', 'confirmation_code',)
+
+
+class RegisterSerializer(serializers.Serializer):
+    class Meta:
+        fields = ('email', 'username',)
 
 
 class CategorySerializer(serializers.ModelSerializer):
