@@ -1,10 +1,9 @@
-from reviews.models import Comment, Review, Title
 import datetime as dt
 
 from django.db.models.aggregates import Avg
 from rest_framework import serializers
-from reviews.models import Category, Genre, Title
-from users.models import CustomUser
+from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.models import User
 
 ERROR_CHANGE_ROLE = {
     'role': 'Невозможно изменить роль пользователя.'
@@ -25,7 +24,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'bio',
             'role',
         )
-        model = CustomUser
+        model = User
         extra_kwargs = {
             'users': {'lookup_field': 'username'}
         }
@@ -57,11 +56,10 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleReadSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True,)
     category = CategorySerializer()
-    rating = serializers.SerializerMethodField(required=False)
+    rating = serializers.SerializerMethodField(required=False,)
 
     class Meta:
-        fields = ('name', 'year', 'rating',
-                  'description', 'genre', 'category',)
+        fields = '__all__'
         model = Title
 
     def get_rating(self, obj):
@@ -77,19 +75,23 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         slug_field='slug', )
 
     class Meta:
-        fields = ('name', 'year',
-                  'description', 'genre', 'category',)
+        fields = '__all__'
         model = Title
 
-    def validate(self, data):
-        year = data.get('year')
-        if year > dt.date.today().year:
-            raise serializers.ValidationError(
-                'Нельзя указать будущую дату'
-            )
+        def validate(self, data):
+            year = data.get('year')
+            if year > dt.date.today().year:
+                raise serializers.ValidationError(
+                    'Нельзя указать будущую дату'
+                )
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    title = serializers.SlugRelatedField(
+        slug_field='id',
+        required=False,
+        queryset=Title.objects.all()
+    )
     author = serializers.SlugRelatedField(
         read_only=True, required=False, slug_field='username')
 
@@ -97,8 +99,26 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = '__all__'
 
+        def validate(self, data):
+            if self.context['request'].method == 'POST':
+                user = self.context['request'].user
+                title_id = self.context['view'].kwargs.get('title_id')
+                if Review.objects.filter(author=user, title_id=title_id):
+                    raise serializers.ValidationError(NOT_ALLOWED)
+            return data
+
 
 class CommentSerializer(serializers.ModelSerializer):
+    title = serializers.SlugRelatedField(
+        slug_field='id',
+        required=False,
+        queryset=Title.objects.all()
+    )
+    review = serializers.SlugRelatedField(
+        slug_field='id',
+        required=False,
+        queryset=Review.objects.all()
+    )
     author = serializers.SlugRelatedField(
         read_only=True, required=False, slug_field='username')
 

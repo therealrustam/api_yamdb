@@ -1,4 +1,3 @@
-
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -14,11 +13,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title
-from users.models import CustomUser
+from reviews.models import User
 
 from api.permissions import AdminOrReadOnly, IsAdmin
 from api.serializers import (CategorySerializer, CustomUserSerializer,
-                             GenreSerializer, TitleReadSerializer, TitleWriteSerializer)
+                             GenreSerializer, TitleReadSerializer, TitleWriteSerializer,)
 
 from .permissions import ModeratorOrReadOnly
 from .serializers import CommentSerializer, ReviewSerializer
@@ -36,7 +35,7 @@ CODE_ERROR = {
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     """Выдает список всех пользователей."""
-    queryset = CustomUser.objects.all()
+    queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
     lookup_field = 'username'
@@ -72,12 +71,12 @@ class RegisterView(APIView):
 
     def post(self, request):
         email = request.data.get('email')
-        user = CustomUser.objects.filter(email=email).exists()
+        user = User.objects.filter(email=email).exists()
         if user:
             return Response(
                 USER_ERROR, status=status.HTTP_400_BAD_REQUEST
             )
-        user = CustomUser.objects.create_user(
+        user = User.objects.create_user(
             username=email, email=email, password=None
         )
         confirmation_code = default_token_generator.make_token(user)
@@ -96,7 +95,7 @@ class JWTTokenView(APIView):
     def post(self, request):
         email = request.data['email']
         confirmation_code = request.data['confirmation_code']
-        user = get_object_or_404(CustomUser, email=email)
+        user = get_object_or_404(User, email=email)
         if not default_token_generator.check_token(
             user, confirmation_code
         ):
@@ -135,19 +134,21 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_fields = ('category', 'genre', 'name', 'year')
 
     def get_serializer_class(self):
-        if self.action == 'list' or 'retrieve':
-            return TitleReadSerializer
-        return TitleWriteSerializer
+        if self.action == 'post' or 'patch' or 'delete':
+            return TitleWriteSerializer
+        return TitleReadSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [ModeratorOrReadOnly, ]
+    permission_classes = [AdminOrReadOnly, ]
     http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        title_id = self.kwargs.get('title_id')
+        title = get_object_or_404(Title, id=title_id)
+        serializer.save(author=self.request.user, title=title)
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
@@ -158,12 +159,16 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [ModeratorOrReadOnly, ]
+    permission_classes = [AdminOrReadOnly, ]
     http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        title_id = self.kwargs.get('title_id')
+        title = get_object_or_404(Title, id=title_id)
+        review_id = self.kwargs.get('review_id')
+        review = get_object_or_404(Review, id=review_id)
+        serializer.save(author=self.request.user, review=review, title=title)
 
     def get_queryset(self):
         review_id = self.kwargs.get('review_id')

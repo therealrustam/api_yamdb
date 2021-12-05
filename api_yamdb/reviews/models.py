@@ -1,6 +1,59 @@
+import uuid
+
+from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from users.models import CustomUser
+
+
+class User(AbstractUser):
+    USER_ROLES = [
+        ('Admin', 'Администратор'),
+        ('Moderator', 'Модератор'),
+        ('User', 'Пользователь'),
+    ]
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username',)
+
+    email = models.EmailField(
+        'Адрес электронной почты',
+        unique=True,
+        blank=True
+    )
+    bio = models.CharField(
+        'Информация о себе',
+        max_length=500,
+        null=True,
+        blank=True
+    )
+    role = models.CharField(
+        'Роль пользователя',
+        max_length=20,
+        choices=USER_ROLES,
+        default='user'
+    )
+    confirmation_code = models.TextField(
+        'Код подтверждения',
+        max_length=100,
+        default=uuid.uuid4,
+        null=True,
+        editable=False
+    )
+
+    @property
+    def is_admin(self):
+        return self.role == 'admin' or self.is_staff
+
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator'
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
+    def __str__(self):
+        return str(self.email)
 
 
 class Category(models.Model):
@@ -33,16 +86,14 @@ class Title(models.Model):
     name = models.CharField(
         max_length=256,
     )
-    year = models.DateField()
-    rating = models.IntegerField()
-    description = models.CharField(
-        max_length=1000,
-        null=True,
-        blank=True,
-    )
-    genre = models.ForeignKey(
+    year = models.IntegerField()
+    rating = models.IntegerField(default=1)
+    description = models.TextField(null=True,
+                                   blank=True,)
+    genre = models.ManyToManyField(
         Genre,
-        on_delete=models.CASCADE,
+        blank=True,
+        db_index=True,
         related_name='title',
     )
     category = models.ForeignKey(
@@ -61,7 +112,7 @@ class Review(models.Model):
     )
     text = models.TextField()
     author = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='reviews'
+        User, on_delete=models.CASCADE, related_name='reviews'
     )
     score = models.IntegerField(
         validators=(
@@ -86,7 +137,7 @@ class Comment(models.Model):
         'Дата публикации', auto_now_add=True
     )
     author = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name='comments'
+        User, on_delete=models.CASCADE, related_name='comments'
     )
 
     def __str__(self):
