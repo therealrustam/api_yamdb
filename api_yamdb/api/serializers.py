@@ -1,6 +1,7 @@
 import datetime as dt
 
 from django.db.models.aggregates import Avg
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from reviews.models import Category, Comment, Genre, Review, Title, User
@@ -96,31 +97,33 @@ class TitleWriteSerializer(serializers.ModelSerializer):
                 )
 
 
+class CurrentTitleDafault:
+    requires_context = True
+
+    def __call__(self, serializer_field):
+        c_view = serializer_field.context['view']
+        title_id = c_view.kwargs.get('title_id')
+        title = get_object_or_404(Title, id=title_id)
+        return title
+
+    def __repr__(self):
+        return '%s()' % self.__class__.__name__
+
+
 class ReviewSerializer(serializers.ModelSerializer):
-    title = serializers.SlugRelatedField(
-        slug_field='id',
-        required=False,
-        queryset=Title.objects.all()
-    )
+    title = serializers.HiddenField(default=CurrentTitleDafault())
     author = serializers.SlugRelatedField(
-        read_only=True, required=False, slug_field='username')
+        slug_field='username',
+        read_only=True
+    )
 
     class Meta:
-        model = Review
         fields = '__all__'
-        validators = [UniqueTogetherValidator(
-            queryset=Review.objects.all(),
-            fields=['title', 'author']), ]
-        extra_kwargs = {'text': {'required': True}}
-        extra_kwargs = {'score': {'required': True}}
+        model = Review
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    title = serializers.SlugRelatedField(
-        slug_field='id',
-        required=False,
-        queryset=Title.objects.all()
-    )
+    title = serializers.HiddenField(default=CurrentTitleDafault())
     review = serializers.SlugRelatedField(
         slug_field='id',
         required=False,
