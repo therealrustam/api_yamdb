@@ -73,10 +73,9 @@ class TitleReadSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Title
 
-    def get_rating(self, obj):
-        rating = Review.objects.all().aggregate(Avg('score'))
-        rating_value = rating["score__avg"]
-        return rating_value
+        def get_rating(self, obj):
+            rating = Review.objects.all().aggregate(Avg('score'))
+            return rating
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):

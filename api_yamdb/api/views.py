@@ -4,17 +4,19 @@ from django.core.mail import send_mail
 from django.http import request
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (AllowAny, IsAdminUser, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
-from .permissions import AdminOrReadOnly, IsAdmin, ModeratorOrReadOnly, AuthorOrReadOnly
+from .permissions import (AdminOrReadOnly, AuthorOrReadOnly, IsAdmin,
+                          ModeratorOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
                           CustomUserSerializer, GenreSerializer,
                           RegisterSerializer, ReviewSerializer,
@@ -109,7 +111,14 @@ class JWTTokenView(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CustomViewSet(mixins.CreateModelMixin,
+                    mixins.ListModelMixin,
+                    mixins.DestroyModelMixin,
+                    viewsets.GenericViewSet):
+    pass
+
+
+class CategoryViewSet(CustomViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAuthenticatedOrReadOnly,)
@@ -125,7 +134,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class GenreViewSet(CustomViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, )
@@ -155,7 +164,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.request.user.is_authenticated:
-            if (self.action == 'partial_update') or (self.action == 'destroy'):
+            if (self.action == 'partial_update') or (self.action == 'destroy') or (self.action == 'create'):
                 return (AdminOrReadOnly(),)
         return super().get_permissions()
 
