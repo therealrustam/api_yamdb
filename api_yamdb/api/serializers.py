@@ -67,15 +67,10 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleReadSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True,)
     category = CategorySerializer()
-    rating = serializers.SerializerMethodField()
 
     class Meta:
         fields = '__all__'
         model = Title
-
-        def get_rating(self, obj):
-            rating = Review.objects.all().aggregate(Avg('score'))
-            return rating
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
@@ -85,6 +80,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field='slug', )
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         fields = '__all__'
@@ -96,6 +92,10 @@ class TitleWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Нельзя указать будущую дату'
                 )
+
+    def get_rating(self, obj):
+        rating = obj.reviews.all().aggregate(Avg('score'))['score__avg']
+        return rating
 
 
 class CurrentTitleDefault:
