@@ -8,7 +8,7 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -157,6 +157,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
         new_queryset = Review.objects.filter(title__id=title.id)
         return new_queryset
 
+    def get_permissions(self):
+        if (self.action == 'partial_update') or (self.action == 'destroy'):
+            return (IsAdminUser(),)
+        return super().get_permissions()
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
@@ -165,14 +170,15 @@ class CommentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get('title_id')
-        title = get_object_or_404(Title, id=title_id)
-        review_id = self.kwargs.get('review_id')
-        review = get_object_or_404(Review, id=review_id, id__title=title_id)
-        serializer.save(author=self.request.user, review=review, title=title)
+        serializer.save(author=self.request.user)
 
     def get_queryset(self):
         review_id = self.kwargs.get('review_id')
         review = get_object_or_404(Review, id=review_id)
         new_queryset = Comment.objects.filter(review__id=review.id)
         return new_queryset
+
+    def get_permissions(self):
+        if (self.action == 'partial_update') or (self.action == 'destroy'):
+            return (IsAdminUser(),)
+        return super().get_permissions()

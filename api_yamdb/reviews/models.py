@@ -111,6 +111,12 @@ class Review(models.Model):
         'Дата публикации', auto_now_add=True
     )
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'], name='unique_review')
+        ]
+
     def __str__(self):
         return self.text
 

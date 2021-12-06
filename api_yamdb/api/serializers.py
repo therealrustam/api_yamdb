@@ -97,7 +97,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
                 )
 
 
-class CurrentTitleDafault:
+class CurrentTitleDefault:
     requires_context = True
 
     def __call__(self, serializer_field):
@@ -106,13 +106,11 @@ class CurrentTitleDafault:
         title = get_object_or_404(Title, id=title_id)
         return title
 
-    def __repr__(self):
-        return '%s()' % self.__class__.__name__
-
 
 class ReviewSerializer(serializers.ModelSerializer):
-    title = serializers.HiddenField(default=CurrentTitleDafault())
+    title = serializers.HiddenField(default=CurrentTitleDefault())
     author = serializers.SlugRelatedField(
+        default=serializers.CurrentUserDefault(),
         slug_field='username',
         read_only=True
     )
@@ -120,15 +118,24 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
         model = Review
+        validators = (UniqueTogetherValidator(
+            queryset=Review.objects.all(),
+            fields=('title', 'author',)),)
+
+
+class CurrentReviewDefault:
+    requires_context = True
+
+    def __call__(self, serializer_field):
+        c_view = serializer_field.context['view']
+        review_id = c_view.kwargs.get('review_id')
+        review = get_object_or_404(Review, id=review_id)
+        return review
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    title = serializers.HiddenField(default=CurrentTitleDafault())
-    review = serializers.SlugRelatedField(
-        slug_field='id',
-        required=False,
-        queryset=Review.objects.all()
-    )
+    review = serializers.HiddenField(
+        default=CurrentReviewDefault(), )
     author = serializers.SlugRelatedField(
         read_only=True, required=False, slug_field='username')
 
