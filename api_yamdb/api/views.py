@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
-from .permissions import AdminOrReadOnly, IsAdmin, ModeratorOrReadOnly
+from .permissions import AdminOrReadOnly, IsAdmin, ModeratorOrReadOnly, AuthorOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           CustomUserSerializer, GenreSerializer,
                           RegisterSerializer, ReviewSerializer,
@@ -176,7 +176,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.request.user.is_authenticated:
-            if (self.action == 'partial_update') or (self.action == 'destroy'):
+            if (self.action == 'partial_update'):
+                return (AuthorOrReadOnly(),)
+            if (self.action == 'destroy'):
                 return (ModeratorOrReadOnly(),)
         return super().get_permissions()
 
@@ -197,6 +199,8 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.request.user.is_authenticated:
-            if (self.action == 'partial_update') or (self.action == 'destroy'):
+            if (self.action == 'partial_update'):
+                return (AuthorOrReadOnly(),)
+            if (self.action == 'destroy'):
                 return (ModeratorOrReadOnly(),)
         return super().get_permissions()
