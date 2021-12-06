@@ -73,7 +73,8 @@ class TitleReadSerializer(serializers.ModelSerializer):
         model = Title
 
     def get_rating(self, obj):
-        return int(Review.objects.filter(id__title=obj.id).aggregate(Avg('score')).values())
+        return int(Review.objects.filter(
+            id__title=obj.id).aggregate(Avg('score')).values())
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
