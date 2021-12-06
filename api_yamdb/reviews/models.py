@@ -106,6 +106,7 @@ class Review(models.Model):
             MinValueValidator(1),
             MaxValueValidator(10)
         ),
+
     )
     pub_date = models.DateTimeField(
         'Дата публикации', auto_now_add=True

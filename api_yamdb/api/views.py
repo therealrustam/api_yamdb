@@ -112,26 +112,38 @@ class JWTTokenView(APIView):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (AdminOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
+
+    def get_permissions(self):
+        if self.request.user.is_authenticated:
+            if (self.action == 'partial_update') or (self.action == 'destroy') or (self.action == 'create'):
+                return (AdminOrReadOnly(),)
+        return super().get_permissions()
 
 
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (AdminOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly, )
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
 
+    def get_permissions(self):
+        if self.request.user.is_authenticated:
+            if (self.action == 'partial_update') or (self.action == 'destroy') or (self.action == 'create'):
+                return (AdminOrReadOnly(),)
+        return super().get_permissions()
+
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    permission_classes = (AdminOrReadOnly,)
+    permission_classes = (IsAuthenticatedOrReadOnly, )
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('category', 'genre', 'name', 'year')
@@ -141,11 +153,16 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleWriteSerializer
         return TitleReadSerializer
 
+    def get_permissions(self):
+        if self.request.user.is_authenticated:
+            if (self.action == 'partial_update') or (self.action == 'destroy'):
+                return (AdminOrReadOnly(),)
+        return super().get_permissions()
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, ]
-    http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
@@ -158,15 +175,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return new_queryset
 
     def get_permissions(self):
-        if (self.action == 'partial_update') or (self.action == 'destroy'):
-            return (IsAdminUser(),)
+        if self.request.user.is_authenticated:
+            if (self.action == 'partial_update') or (self.action == 'destroy'):
+                return (ModeratorOrReadOnly(),)
         return super().get_permissions()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, ]
-    http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
@@ -179,6 +196,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return new_queryset
 
     def get_permissions(self):
-        if (self.action == 'partial_update') or (self.action == 'destroy'):
-            return (IsAdminUser(),)
+        if self.request.user.is_authenticated:
+            if (self.action == 'partial_update') or (self.action == 'destroy'):
+                return (ModeratorOrReadOnly(),)
         return super().get_permissions()
