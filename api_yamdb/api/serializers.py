@@ -53,20 +53,40 @@ class RegisterSerializer(serializers.Serializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('name', 'slug',)
-        model = Category
         lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
+        model = Category
+
+
+class CategoryField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        serializer = CategorySerializer(value)
+        return serializer.data
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('name', 'slug',)
-        model = Genre
         lookup_field = 'slug'
+        extra_kwargs = {
+            'url': {'lookup_field': 'slug'}
+        }
+        model = Genre
+
+
+class GenreField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        serializer = GenreSerializer(value)
+        return serializer.data
 
 
 class TitleReadSerializer(serializers.ModelSerializer):
-    genre = GenreSerializer(many=True,)
-    category = CategorySerializer()
+    genre = GenreField(slug_field='slug',
+                       queryset=Genre.objects.all(), many=True)
+    category = CategoryField(slug_field='slug',
+                             queryset=Category.objects.all(), required=False)
 
     class Meta:
         fields = '__all__'
@@ -74,12 +94,10 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
-    genre = serializers.SlugRelatedField(
-        queryset=Genre.objects.all(),
-        slug_field='slug', many=True,)
-    category = serializers.SlugRelatedField(
-        queryset=Category.objects.all(),
-        slug_field='slug', )
+    genre = GenreField(slug_field='slug',
+                       queryset=Genre.objects.all(), many=True)
+    category = CategoryField(slug_field='slug',
+                             queryset=Category.objects.all(), required=False)
     rating = serializers.SerializerMethodField()
 
     class Meta:

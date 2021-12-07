@@ -155,7 +155,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly, )
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('category', 'genre', 'name', 'year')
+    filterset_fields = ('genre__slug', )
 
     def get_serializer_class(self):
         if self.action == 'post' or 'patch' or 'delete':
