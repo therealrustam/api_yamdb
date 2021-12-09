@@ -1,11 +1,14 @@
 from copy import deepcopy
 
+# from django_filters.rest_framework import DjangoFilterBackend
+# from django.http import request
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
+# from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
@@ -13,28 +16,42 @@ from rest_framework.permissions import (AllowAny, IsAdminUser, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
+# from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 from .filters import TitleFilter
 from .permissions import (AdminOrReadOnly, AuthorOrReadOnly, IsAdmin,
+                          IsAdminOrReadOnly, IsOwnerAdminModeratorOrReadOnly,
                           ModeratorOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
-                          CustomUserSerializer, GenreSerializer,
-                          RegistrationSerializer, ReviewSerializer,
-                          TitleReadSerializer, TitleWriteSerializer,
-                          TokenSerializer)
+                          GenreSerializer, GetAllUserSerializer,
+                          GetTokenSerializer, RegistrationSerializer,
+                          ReviewSerializer, TitleReadSerializer,
+                          TitleWriteSerializer)
+
+# from .permission import (IsAdmin, IsAdminOrReadOnly,
+#                             IsOwnerAdminModeratorOrReadOnly)
+
 
 USER_ERROR = {
-    'error': 'Пользователь с таким email уже существует!'
-}
-CODE_INFO = {
-    'email': 'Код подтверждения отправлен на Ваш email!'
+    'Ошибка': 'Данный email уже зарегистирован.'
 }
 CODE_ERROR = {
-    'error': 'Неверный код подтверждения'
+    'Ошибка': 'Неверный код подтвреждения. Проверьте правильность кода.'
 }
-
+ERROR_CHANGE_ROLE = {
+    'Ошибка': 'Невозможно изменить роль пользователя.'
+}
+ERROR_CHANGE_EMAIL = {
+    'Электронный адрес': 'Невозможно изменить подтвержденный адрес.'
+}
+ME_ERROR = {
+    'Ошибка': 'Данный никнейм выбрать нельзя.'
+}
+USERNAME_NOT_FOUND = {
+    'Ошибка': 'Данный пользователь не найден.'
+}
 
 class CreateListDestroyViewSet(mixins.CreateModelMixin,
                                mixins.ListModelMixin,
@@ -43,17 +60,26 @@ class CreateListDestroyViewSet(mixins.CreateModelMixin,
     pass
 
 
-class CustomUserViewSet(viewsets.ModelViewSet):
-    """Выдает список всех пользователей."""
+class GetAllUserViewSet(viewsets.ModelViewSet):
+    """Пользователь с правами админа может создать
+    нового пользователя, отправив запрос на api/v1/users/.
+
+    Авторизованный пользователь, получивший токен,
+    может с помощью PATCH-запроса заполнить поля
+    своего профиля, отправив запрос на api/v1/users/me/.
+    """
+    permission_classes = [IsAdmin]
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = GetAllUserSerializer
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter, )
     search_fields = ('username',)
 
-    @action(detail=False, methods=['get', 'patch'],
-            permission_classes=[IsAuthenticated])
+    @action(
+        detail=False, methods=['GET', 'PATCH'],
+        permission_classes=[IsAuthenticated],
+        serializer_class=GetAllUserSerializer
+    )
     def me(self, request):
         user = self.request.user
         if request.method == 'GET':
@@ -74,16 +100,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_403_FORBIDDEN)
 
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
-
-
-class RegisterView(APIView):
+class RegistrationView(views.APIView):
     permission_classes = [AllowAny]
 
     @staticmethod
@@ -104,27 +121,42 @@ class RegisterView(APIView):
         serializer.save(email=email)
         username = serializer.validated_data['username']
         if username == 'me':
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(ME_ERROR, status=status.HTTP_400_BAD_REQUEST)
         user = get_object_or_404(User, email=email)
         self.send_reg_mail(email, user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class JWTTokenView(APIView):
+class GetTokenView(views.APIView):
     permission_classes = [AllowAny]
-    serializer_class = TokenSerializer
 
     def post(self, request):
-        username = request.data.get('username', {})
-        confirmation_code = request.data.get('confirmation_code', {})
-        user = get_object_or_404(User, username=username)
-        if not default_token_generator.check_token(
-            user, confirmation_code
-        ):
-            return Response(status=status.HTTP_400_BAD_REQUEST
-                            )
-        response = get_tokens_for_user(user)
-        return Response(response, status=status.HTTP_200_OK)
+        serializer = GetTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        confirmation_code = serializer.validated_data['confirmation_code']
+        username = serializer.validated_data['username']
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response(
+                USERNAME_NOT_FOUND,
+                status=status.HTTP_404_NOT_FOUND
+            )
+        if user.confirmation_code != confirmation_code:
+            return Response(
+                CODE_ERROR,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(self.obtain_token(user), status=status.HTTP_200_OK)
+
+    @staticmethod
+    def obtain_token(user):
+        refresh = RefreshToken.for_user(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+
 
 
 class CustomViewSet(mixins.CreateModelMixin,
