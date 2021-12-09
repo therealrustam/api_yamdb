@@ -18,7 +18,7 @@ from .permissions import (AdminOrReadOnly, AuthorOrReadOnly, IsAdmin,
                           ModeratorOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
                           CustomUserSerializer, GenreSerializer,
-                          RegisterSerializer, ReviewSerializer,
+                          RegistrationSerializer, ReviewSerializer,
                           TitleReadSerializer, TitleWriteSerializer,
                           TokenSerializer)
 from .filters import TitleFilter
@@ -79,26 +79,29 @@ def get_tokens_for_user(user):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
-    serializer_class = RegisterSerializer
+
+    @staticmethod
+    def send_reg_mail(email, user):
+        send_mail(
+            subject='Код подтверждения для получения токена.',
+            message=f'Пожалуйста, не передавайте данный код третьим лицам. '
+                    f'Ваш код: {user.confirmation_code}',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False
+        )
 
     def post(self, request):
-        email = request.data.get('email')
-        user = User.objects.filter(email=email).exists()
-        if user:
-            return Response(
-                USER_ERROR, status=status.HTTP_400_BAD_REQUEST
-            )
-        user = User.objects.create_user(
-            username=email, email=email, password=None,
-        )
-        confirmation_code = default_token_generator.make_token(user)
-        send_mail(
-            'Ваш код подтверждения',
-            confirmation_code,
-            settings.DEFAULT_FROM_EMAIL,
-            (email,),
-        )
-        return Response(CODE_INFO, status=status.HTTP_200_OK)
+        serializer = RegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        serializer.save(email=email)
+        username = serializer.validated_data['username']
+        if username == 'me':
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        user = get_object_or_404(User, email=email)
+        self.send_reg_mail(email, user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class JWTTokenView(APIView):

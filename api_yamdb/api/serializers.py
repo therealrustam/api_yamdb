@@ -1,4 +1,5 @@
 import datetime as dt
+from enum import unique
 
 from django.db.models.aggregates import Avg
 from django.shortcuts import get_object_or_404
@@ -27,27 +28,39 @@ class CustomUserSerializer(serializers.ModelSerializer):
         )
         model = User
         extra_kwargs = {
-            'users': {'lookup_field': 'username'}
+            'users': {'lookup_field': 'username'},
+            'username': {'required': True},
+            'email': {'required': True},
         }
 
-        def validate(self, data):
+        def validate_role(self, data):
             user = self.context['request'].user
             if not user.is_admin:
                 if data.get('role'):
-                    raise serializers.ValidationError(ERROR_CHANGE_ROLE)
+                    if data['role'] == 'admin':
+                        raise serializers.ValidationError(ERROR_CHANGE_ROLE)
                 if data.get('email'):
                     raise serializers.ValidationError(ERROR_CHANGE_EMAIL)
             return data
 
 
-class TokenSerializer(serializers.Serializer):
+class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('username', 'confirmation_code',)
+        model = User
+        extra_kwargs = {
+            'username': {'required': True},
+        }
 
 
-class RegisterSerializer(serializers.Serializer):
+class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('email', 'username',)
+        model = User
+        extra_kwargs = {
+            'email': {'required': True},
+            'username': {'required': True},
+        }
 
 
 class CategorySerializer(serializers.ModelSerializer):

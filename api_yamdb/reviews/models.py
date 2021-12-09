@@ -20,10 +20,22 @@ class User(AbstractUser):
         blank=True,
         null=True,
     )
+    email = models.EmailField(
+        'Адрес электронной почты',
+        unique=True,
+        blank=True
+    )
     role = models.TextField(
         choices=ROLE_CHOISES,
         default=USER,
         blank=False,
+    )
+    confirmation_code = models.TextField(
+        'Код подтверждения',
+        max_length=100,
+        default=uuid.uuid4,
+        null=True,
+        editable=False
     )
 
     @property
