@@ -9,34 +9,30 @@ class User(AbstractUser):
     USER = 'user'
     MODERATOR = 'moderator'
     ADMIN = 'admin'
-
     ROLE_CHOISES = [
         (USER, 'user'),
         (MODERATOR, 'moderator'),
         (ADMIN, 'admin')
     ]
-
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['email']
-
-    email = models.EmailField(
-        blank=False,
-        unique=True
-    )
+    username = models.CharField(max_length=150, unique=True,)
 
     bio = models.TextField(
         verbose_name='Биография',
         blank=True,
         null=True,
     )
-    role = models.CharField(
-        max_length=10,
+    email = models.EmailField(
+        'Адрес электронной почты',
+        unique=True,
+        blank=True
+    )
+    role = models.TextField(
         choices=ROLE_CHOISES,
         default=USER,
         blank=False,
     )
     confirmation_code = models.TextField(
-        verbose_name='Код подтверждения',
+        'Код подтверждения',
         max_length=100,
         default=uuid.uuid4,
         null=True,
@@ -52,7 +48,6 @@ class User(AbstractUser):
         return self.role == 'moderator'
 
     class Meta:
-        ordering = ['date_joined']
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 

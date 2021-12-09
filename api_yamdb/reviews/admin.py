@@ -5,7 +5,7 @@ from reviews.models import Category, Genre, Title
 from .models import User
 
 
-class UserAdmin(UserAdmin):
+class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         (None, {'fields': ('bio',)}),
     )
@@ -16,7 +16,7 @@ class UserAdmin(UserAdmin):
     empty_value_display = '-пусто-'
 
 
-admin.site.register(User, UserAdmin)
+admin.site.register(User, CustomUserAdmin)
 
 
 class CategoryAdmin(admin.ModelAdmin):
