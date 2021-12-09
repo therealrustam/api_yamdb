@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -14,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
+from .filters import TitleFilter
 from .permissions import (AdminOrReadOnly, AuthorOrReadOnly, IsAdmin,
                           ModeratorOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
@@ -21,8 +24,6 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           RegistrationSerializer, ReviewSerializer,
                           TitleReadSerializer, TitleWriteSerializer,
                           TokenSerializer)
-from .filters import TitleFilter
-
 
 USER_ERROR = {
     'error': 'Пользователь с таким email уже существует!'
@@ -59,8 +60,13 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(user)
             return Response(serializer.data)
         if request.method == 'PATCH':
+            if (request.data.get('role') == 'admin') and (self.request.user.role == 'user'):
+                data = deepcopy(request.data)
+                data['role'] = 'user'
+            else:
+                data = request.data
             serializer = self.get_serializer(
-                user, data=request.data, partial=True
+                user, data=data, partial=True
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -109,15 +115,14 @@ class JWTTokenView(APIView):
     serializer_class = TokenSerializer
 
     def post(self, request):
-        username = request.data['username']
-        confirmation_code = request.data['confirmation_code']
+        username = request.data.get('username', {})
+        confirmation_code = request.data.get('confirmation_code', {})
         user = get_object_or_404(User, username=username)
         if not default_token_generator.check_token(
             user, confirmation_code
         ):
-            return Response(
-                CODE_ERROR, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(status=status.HTTP_400_BAD_REQUEST
+                            )
         response = get_tokens_for_user(user)
         return Response(response, status=status.HTTP_200_OK)
 

@@ -14,6 +14,7 @@ class User(AbstractUser):
         (MODERATOR, 'moderator'),
         (ADMIN, 'admin')
     ]
+    username = models.CharField(max_length=150, unique=True,)
 
     bio = models.TextField(
         verbose_name='Биография',
