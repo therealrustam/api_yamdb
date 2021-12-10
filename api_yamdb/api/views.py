@@ -5,7 +5,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, mixins, status, viewsets, views
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
@@ -74,15 +74,6 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_403_FORBIDDEN)
 
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
-
-
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -110,21 +101,44 @@ class RegisterView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class JWTTokenView(APIView):
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
+class TokenView(views.APIView):
     permission_classes = [AllowAny]
-    serializer_class = TokenSerializer
 
     def post(self, request):
-        username = request.data.get('username', {})
-        confirmation_code = request.data.get('confirmation_code', {})
-        user = get_object_or_404(User, username=username)
-        if not default_token_generator.check_token(
-            user, confirmation_code
-        ):
-            return Response(status=status.HTTP_400_BAD_REQUEST
-                            )
-        response = get_tokens_for_user(user)
-        return Response(response, status=status.HTTP_200_OK)
+        serializer = TokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        confirmation_code = serializer.validated_data['confirmation_code']
+        username = serializer.validated_data['username']
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response(
+
+                status=status.HTTP_404_NOT_FOUND
+            )
+        if user.confirmation_code != confirmation_code:
+            return Response(
+                CODE_ERROR,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(self.obtain_token(user), status=status.HTTP_200_OK)
+
+    @staticmethod
+    def obtain_token(user):
+        refresh = RefreshToken.for_user(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
 
 
 class CustomViewSet(mixins.CreateModelMixin,

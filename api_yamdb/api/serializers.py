@@ -45,12 +45,12 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 
 class TokenSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(required=True)
+
     class Meta:
         fields = ('username', 'confirmation_code',)
         model = User
-        extra_kwargs = {
-            'username': {'required': True},
-        }
 
 
 class RegistrationSerializer(serializers.ModelSerializer):

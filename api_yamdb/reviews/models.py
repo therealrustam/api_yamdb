@@ -36,7 +36,7 @@ class User(AbstractUser):
         max_length=100,
         default=uuid.uuid4,
         null=True,
-        editable=False
+        editable=False,
     )
 
     @property

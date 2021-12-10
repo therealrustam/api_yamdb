@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from api.views import (CategoryViewSet, GenreViewSet, JWTTokenView,
+from api.views import (CategoryViewSet, GenreViewSet, TokenView,
                        RegisterView, TitleViewSet)
 
 from .views import CommentViewSet, CustomUserViewSet, ReviewViewSet
@@ -27,7 +27,7 @@ urlpatterns = [
         name='registration'),
     path(
         'v1/auth/token/',
-        JWTTokenView.as_view(),
+        TokenView.as_view(),
         name='token_obtain_pair'
     ),
     path('v1/titles/<int:title_id>/', include(router1.urls)),
