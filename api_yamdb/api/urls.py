@@ -1,10 +1,10 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from api.views import (CategoryViewSet, GenreViewSet, TokenView,
-                       RegisterView, TitleViewSet)
+from api.views import (CategoryViewSet, GenreViewSet, GetAllUserViewSet,
+                       GetTokenView, RegistrationView, TitleViewSet)
 
-from .views import CommentViewSet, CustomUserViewSet, ReviewViewSet
+from .views import CommentViewSet, ReviewViewSet
 
 appname = 'api'
 router = DefaultRouter()
@@ -14,21 +14,26 @@ router2 = DefaultRouter()
 router.register(r'categories', CategoryViewSet, basename='categories')
 router.register(r'genres', GenreViewSet, basename='genres')
 router.register(r'titles', TitleViewSet, basename='titles')
-router.register('users', CustomUserViewSet)
+router.register('users', GetAllUserViewSet)
 router1.register('reviews', ReviewViewSet, basename='reviews')
 router2.register('comments', CommentViewSet, basename='comments')
 
 
 urlpatterns = [
     path('v1/', include(router.urls)),
+    path('users', GetAllUserViewSet),
     path(
         'v1/auth/signup/',
-        RegisterView.as_view(),
+        RegistrationView.as_view(),
         name='registration'),
     path(
         'v1/auth/token/',
-        TokenView.as_view(),
-        name='token_obtain_pair'
+        GetTokenView.as_view(),
+        name='get_token'
+
     ),
     path('v1/titles/<int:title_id>/', include(router1.urls)),
-    path('v1/titles/<int:title_id>/reviews/<int:review_id>/', include(router2.urls)), ]
+    path(
+        'v1/titles/<int:title_id>/reviews/<int:review_id>/',
+        include(router2.urls)),
+]

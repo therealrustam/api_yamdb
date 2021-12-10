@@ -1,5 +1,4 @@
 import datetime as dt
-from enum import unique
 
 from django.db.models.aggregates import Avg
 from django.shortcuts import get_object_or_404
@@ -13,54 +12,55 @@ ERROR_CHANGE_ROLE = {
 ERROR_CHANGE_EMAIL = {
     'email': 'Невозможно изменить подтвержденный адрес электронной почты.'
 }
+ME_ERROR = {
+    'error': 'Данный никнейм выбрать нельзя.'
+}
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
-    """Выдает список всех пользователей."""
+class GetAllUserSerializer(serializers.ModelSerializer):
+
     class Meta:
+        model = User
         fields = (
             'username',
             'email',
             'first_name',
             'last_name',
             'bio',
-            'role',
+            'role'
         )
-        model = User
+
         extra_kwargs = {
             'users': {'lookup_field': 'username'},
             'username': {'required': True},
-            'email': {'required': True},
+            'email': {'required': True}
         }
 
-        def validate_role(self, data):
-            user = self.context['request'].user
-            if not user.is_admin:
-                if data.get('role'):
-                    if data['role'] == 'admin':
-                        raise serializers.ValidationError(ERROR_CHANGE_ROLE)
-                if data.get('email'):
-                    raise serializers.ValidationError(ERROR_CHANGE_EMAIL)
-            return data
+
+class RegistrationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'username'
+        )
+        extra_kwargs = {
+            'username': {'required': True},
+            'email': {'required': True}
+        }
 
 
-class TokenSerializer(serializers.ModelSerializer):
+class GetTokenSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
     confirmation_code = serializers.CharField(required=True)
 
     class Meta:
-        fields = ('username', 'confirmation_code',)
         model = User
-
-
-class RegistrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        fields = ('email', 'username',)
-        model = User
-        extra_kwargs = {
-            'email': {'required': True},
-            'username': {'required': True},
-        }
+        fields = (
+            'username',
+            'confirmation_code'
+        )
 
 
 class CategorySerializer(serializers.ModelSerializer):
