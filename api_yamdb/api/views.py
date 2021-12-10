@@ -52,13 +52,6 @@ class CreateListDestroyViewSet(mixins.CreateModelMixin,
 
 
 class GetAllUserViewSet(viewsets.ModelViewSet):
-    """Пользователь с правами админа может создать
-    нового пользователя, отправив запрос на api/v1/users/.
-
-    Авторизованный пользователь, получивший токен,
-    может с помощью PATCH-запроса заполнить поля
-    своего профиля, отправив запрос на api/v1/users/me/.
-    """
     permission_classes = [IsAdmin]
     queryset = User.objects.all()
     serializer_class = GetAllUserSerializer
