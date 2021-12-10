@@ -1,10 +1,6 @@
 from copy import deepcopy
 
-# from django_filters.rest_framework import DjangoFilterBackend
-# from django.http import request
 from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
-# from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -12,27 +8,20 @@ from rest_framework import filters, mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import (AllowAny, IsAdminUser, IsAuthenticated,
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
-from rest_framework.views import APIView
-# from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 from .filters import TitleFilter
 from .permissions import (AdminOrReadOnly, AuthorOrReadOnly, IsAdmin,
-                          IsAdminOrReadOnly, IsOwnerAdminModeratorOrReadOnly,
                           ModeratorOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, GetAllUserSerializer,
                           GetTokenSerializer, RegistrationSerializer,
                           ReviewSerializer, TitleReadSerializer,
                           TitleWriteSerializer)
-
-# from .permission import (IsAdmin, IsAdminOrReadOnly,
-#                             IsOwnerAdminModeratorOrReadOnly)
-
 
 USER_ERROR = {
     'Ошибка': 'Данный email уже зарегистирован.'
@@ -52,6 +41,7 @@ ME_ERROR = {
 USERNAME_NOT_FOUND = {
     'Ошибка': 'Данный пользователь не найден.'
 }
+PERMISSIONS_ACTIONS = ('partial_update', 'destroy', 'create')
 
 
 class CreateListDestroyViewSet(mixins.CreateModelMixin,
@@ -87,7 +77,8 @@ class GetAllUserViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(user)
             return Response(serializer.data)
         if request.method == 'PATCH':
-            if (request.data.get('role') == 'admin') and (self.request.user.role == 'user'):
+            if ((request.data.get('role') == 'admin')
+                    and (self.request.user.role == 'user')):
                 data = deepcopy(request.data)
                 data['role'] = 'user'
             else:
@@ -177,7 +168,7 @@ class CategoryViewSet(CustomViewSet):
 
     def get_permissions(self):
         if self.request.user.is_authenticated:
-            if (self.action == 'partial_update') or (self.action == 'destroy') or (self.action == 'create'):
+            if self.action in PERMISSIONS_ACTIONS:
                 return (AdminOrReadOnly(),)
         return super().get_permissions()
 
@@ -193,7 +184,7 @@ class GenreViewSet(CustomViewSet):
 
     def get_permissions(self):
         if self.request.user.is_authenticated:
-            if (self.action == 'partial_update') or (self.action == 'destroy') or (self.action == 'create'):
+            if self.action in PERMISSIONS_ACTIONS:
                 return (AdminOrReadOnly(),)
         return super().get_permissions()
 
@@ -206,13 +197,13 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
-        if self.action == 'post' or 'patch' or 'delete':
+        if self.action == 'post' or 'patch':
             return TitleWriteSerializer
         return TitleReadSerializer
 
     def get_permissions(self):
         if self.request.user.is_authenticated:
-            if (self.action == 'partial_update') or (self.action == 'destroy') or (self.action == 'create'):
+            if self.action in PERMISSIONS_ACTIONS:
                 return (AdminOrReadOnly(),)
         return super().get_permissions()
 

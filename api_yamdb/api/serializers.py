@@ -1,5 +1,4 @@
 import datetime as dt
-from enum import unique
 
 from django.db.models.aggregates import Avg
 from django.shortcuts import get_object_or_404
