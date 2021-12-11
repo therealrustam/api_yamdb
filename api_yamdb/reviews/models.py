@@ -129,8 +129,10 @@ class Review(models.Model):
     )
     score = models.IntegerField(
         validators=(
-            MinValueValidator(1),
-            MaxValueValidator(10)
+            MinValueValidator(1,
+                              message='Оценка не должна быть меньше 1'),
+            MaxValueValidator(10,
+                              message='Оценка не должна быть больше 10')
         ),
 
     )
@@ -139,6 +141,7 @@ class Review(models.Model):
     )
 
     class Meta:
+        ordering = ['pub_date']
         constraints = [
             models.UniqueConstraint(
                 fields=['title', 'author'], name='unique_review')
@@ -162,3 +165,6 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text
+
+    class Meta:
+        ordering = ['pub_date']
