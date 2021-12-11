@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models.aggregates import Avg
@@ -69,7 +67,7 @@ class GetAllUserViewSet(viewsets.ModelViewSet):
         if request.method == 'PATCH':
             if ((request.data.get('role') == settings.ADMIN_ROLE)
                     and (self.request.user.role == 'user')):
-                data = deepcopy(request.data)
+                data = dict(request.data)
                 data['role'] = settings.USER_ROLE
             else:
                 data = request.data
@@ -155,12 +153,6 @@ class GenreViewSet(CustomViewSet):
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
-
-    def get_permissions(self):
-        if self.request.user.is_authenticated:
-            if self.action in PERMISSIONS_ACTIONS:
-                return (AdminOrReadOnly(),)
-        return super().get_permissions()
 
 
 class TitleViewSet(viewsets.ModelViewSet):
