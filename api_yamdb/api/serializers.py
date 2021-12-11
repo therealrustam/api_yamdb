@@ -72,6 +72,7 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Category
         exclude = ('id', )
@@ -79,6 +80,10 @@ class CategorySerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'url': {'lookup_field': 'slug'}
         }
+
+    # def to_representation(self, value):
+    #    result = super(CategorySerializer, self).to_representation(value)
+    #    return result
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -89,6 +94,10 @@ class GenreSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'url': {'lookup_field': 'slug'}
         }
+
+    # def to_representation(self, value):
+    #    result = super(GenreSerializer, self).to_representation(value)
+    #    return result
 
 
 class TitleReadSerializer(serializers.ModelSerializer):
@@ -104,7 +113,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
 class TitleWriteSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True, )
-    category = CategorySerializer()
+    category = CategorySerializer(required=True,)
 
     class Meta:
         fields = '__all__'

@@ -133,7 +133,6 @@ class Title(models.Model):
         verbose_name='Категория',
         db_index=True,
         on_delete=False,
-        null=True, blank=True,
     )
 
     def __str__(self):
