@@ -1,10 +1,9 @@
-import datetime as dt
-
 from django.db.models.aggregates import Avg
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers
+from django.utils import timezone
+from rest_framework import serializers, status
+from rest_framework.response import Response
 from rest_framework.validators import UniqueTogetherValidator
-
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 ERROR_CHANGE_ROLE = {
@@ -51,6 +50,15 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'email': {'required': True}
         }
 
+#    def validate_username(self, data):
+ #       username = data
+ #       if username == 'me':
+  #          return serializers.ValidationError(
+  #              'Нельзя указать будущую дату'
+  #          )
+   #     else:
+   #         return data
+
 
 class GetTokenSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
@@ -66,7 +74,7 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('name', 'slug',)
+        exclude = ('id', )
         lookup_field = 'slug'
         extra_kwargs = {
             'url': {'lookup_field': 'slug'}
@@ -82,7 +90,7 @@ class CategoryField(serializers.SlugRelatedField):
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('name', 'slug',)
+        exclude = ('id', )
         lookup_field = 'slug'
         extra_kwargs = {
             'url': {'lookup_field': 'slug'}
@@ -101,10 +109,16 @@ class TitleReadSerializer(serializers.ModelSerializer):
                        queryset=Genre.objects.all(), many=True)
     category = CategoryField(slug_field='slug',
                              queryset=Category.objects.all(), required=False)
+    rating = serializers.SerializerMethodField()
 
     class Meta:
-        fields = '__all__'
+        fields = ('id', 'name', 'year', 'description',
+                  'genre', 'category', 'rating',)
         model = Title
+
+    def get_rating(self, obj):
+        rating = obj.reviews.all().aggregate(Avg('score'))['score__avg']
+        return rating
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
@@ -112,22 +126,18 @@ class TitleWriteSerializer(serializers.ModelSerializer):
                        queryset=Genre.objects.all(), many=True)
     category = CategoryField(slug_field='slug',
                              queryset=Category.objects.all(), required=False)
-    rating = serializers.SerializerMethodField()
 
     class Meta:
         fields = '__all__'
         model = Title
 
-        def validate(self, data):
-            year = data.get('year')
-            if year > dt.date.today().year:
-                raise serializers.ValidationError(
-                    'Нельзя указать будущую дату'
-                )
-
-    def get_rating(self, obj):
-        rating = obj.reviews.all().aggregate(Avg('score'))['score__avg']
-        return rating
+    def validate(self, data):
+        year = data.get('year')
+        if year > timezone.now().year:
+            raise serializers.ValidationError(
+                'Нельзя указать будущую дату'
+            )
+        return data
 
 
 class CurrentTitleDefault:

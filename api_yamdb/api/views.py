@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, status, views, viewsets
+from rest_framework import filters, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
@@ -12,9 +12,10 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from reviews.models import Category, Comment, Genre, Review, Title, User
+
 from .filters import TitleFilter
+from .mixins import CustomViewSet
 from .permissions import (AdminOrReadOnly, AuthorOrReadOnly, IsAdmin,
                           ModeratorOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
@@ -35,20 +36,15 @@ ERROR_CHANGE_ROLE = {
 ERROR_CHANGE_EMAIL = {
     'Электронный адрес': 'Невозможно изменить подтвержденный адрес.'
 }
-ME_ERROR = {
-    'Ошибка': 'Данный никнейм выбрать нельзя.'
-}
+
 USERNAME_NOT_FOUND = {
     'Ошибка': 'Данный пользователь не найден.'
 }
 PERMISSIONS_ACTIONS = ('partial_update', 'destroy', 'create')
 
-
-class CreateListDestroyViewSet(mixins.CreateModelMixin,
-                               mixins.ListModelMixin,
-                               mixins.DestroyModelMixin,
-                               viewsets.GenericViewSet):
-    pass
+ME_ERROR = {
+    'error': 'Данный никнейм выбрать нельзя.'
+}
 
 
 class GetAllUserViewSet(viewsets.ModelViewSet):
@@ -143,13 +139,6 @@ class GetTokenView(views.APIView):
         }
 
 
-class CustomViewSet(mixins.CreateModelMixin,
-                    mixins.ListModelMixin,
-                    mixins.DestroyModelMixin,
-                    viewsets.GenericViewSet):
-    pass
-
-
 class CategoryViewSet(CustomViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -190,7 +179,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
-        if self.action == 'post' or 'patch':
+        if (self.action == 'post') or (self.action == 'patch'):
             return TitleWriteSerializer
         return TitleReadSerializer
 

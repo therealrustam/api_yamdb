@@ -1,8 +1,10 @@
 import uuid
 
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -87,24 +89,30 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
+
+    def year_validator(value):
+        if value > timezone.now().year:
+            raise ValidationError(
+                ('%(value)s is not a correcrt year!'),
+                params={'value': value},
+            )
+
     name = models.CharField(
-        max_length=256,
+        max_length=256, db_index=True,
     )
-    year = models.IntegerField()
-    rating = models.IntegerField(null=True,
-                                 blank=True,)
+    year = models.IntegerField(validators=[year_validator],)
     description = models.TextField(null=True,
                                    blank=True,)
     genre = models.ManyToManyField(
         Genre,
         blank=True,
         db_index=True,
-        related_name='title',
+        related_name='titles',
     )
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
-        related_name='title',
+        related_name='titles',
     )
 
     def __str__(self):
