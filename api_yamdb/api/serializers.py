@@ -6,6 +6,8 @@ from rest_framework.response import Response
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
+from .title import CurrentReviewDefault, CurrentTitleDefault
+
 ERROR_CHANGE_ROLE = {
     'role': 'Невозможно изменить роль пользователя.'
 }
@@ -140,16 +142,6 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         return data
 
 
-class CurrentTitleDefault:
-    requires_context = True
-
-    def __call__(self, serializer_field):
-        c_view = serializer_field.context['view']
-        title_id = c_view.kwargs.get('title_id')
-        title = get_object_or_404(Title, id=title_id)
-        return title
-
-
 class ReviewSerializer(serializers.ModelSerializer):
     title = serializers.HiddenField(default=CurrentTitleDefault())
     author = serializers.SlugRelatedField(
@@ -164,16 +156,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         validators = (UniqueTogetherValidator(
             queryset=Review.objects.all(),
             fields=('title', 'author',)),)
-
-
-class CurrentReviewDefault:
-    requires_context = True
-
-    def __call__(self, serializer_field):
-        c_view = serializer_field.context['view']
-        review_id = c_view.kwargs.get('review_id')
-        review = get_object_or_404(Review, id=review_id)
-        return review
 
 
 class CommentSerializer(serializers.ModelSerializer):
