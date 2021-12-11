@@ -13,12 +13,11 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Comment, Genre, Review, Title, User
+from reviews.models import Category, Genre, Review, Title, User
 
 from .filters import TitleFilter
 from .mixins import CustomViewSet
-from .permissions import (AdminOrReadOnly, AuthorOrReadOnly, IsAdmin,
-                          ModeratorOrReadOnly, ReviewCommentPermissions,
+from .permissions import (AdminOrReadOnly, IsAdmin, ReviewCommentPermissions,
                           TitlePermissions)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, GetAllUserSerializer,
@@ -142,23 +141,17 @@ class GetTokenView(views.APIView):
 class CategoryViewSet(CustomViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (IsAuthenticatedOrReadOnly,)
+    permission_classes = (TitlePermissions,)
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter, )
     search_fields = ('name',)
 
-    def get_permissions(self):
-        if self.request.user.is_authenticated:
-            if self.action in PERMISSIONS_ACTIONS:
-                return (AdminOrReadOnly(),)
-        return super().get_permissions()
-
 
 class GenreViewSet(CustomViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly, )
+    permission_classes = (TitlePermissions,)
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter, )

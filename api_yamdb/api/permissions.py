@@ -1,10 +1,6 @@
 from django.conf import settings
 from rest_framework import permissions
-from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
 from reviews.models import Comment, Review
-
-PERMISSIONS_ACTIONS = ('partial_update', 'destroy', 'create')
 
 
 class AdminOrReadOnly(permissions.BasePermission):
