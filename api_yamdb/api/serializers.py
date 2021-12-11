@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.response import Response
-from rest_framework.validators import UniqueTogetherValidator
+from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 ERROR_CHANGE_ROLE = {
@@ -37,27 +37,27 @@ class GetAllUserSerializer(serializers.ModelSerializer):
         }
 
 
+def username_not_me(value):
+    me = 'me'
+    if value == me:
+        raise serializers.ValidationError(ME_ERROR)
+
+
 class RegistrationSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        required=True,
+        validators=[
+            username_not_me,
+            UniqueValidator(queryset=User.objects.all())
+        ]
+    )
 
     class Meta:
         model = User
-        fields = (
-            'email',
-            'username'
-        )
+        fields = ('email', 'username')
         extra_kwargs = {
-            'username': {'required': True},
             'email': {'required': True}
         }
-
-#    def validate_username(self, data):
- #       username = data
- #       if username == 'me':
-  #          return serializers.ValidationError(
-  #              'Нельзя указать будущую дату'
-  #          )
-   #     else:
-   #         return data
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
@@ -112,9 +112,9 @@ class TitleReadSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
 
     class Meta:
+        model = Title
         fields = ('id', 'name', 'year', 'description',
                   'genre', 'category', 'rating',)
-        model = Title
 
     def get_rating(self, obj):
         rating = obj.reviews.all().aggregate(Avg('score'))['score__avg']

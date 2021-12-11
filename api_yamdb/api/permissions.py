@@ -26,12 +26,6 @@ class IsAuthorOrStaff(permissions.BasePermission):
                     or request.user.is_admin))
 
 
-class IsAdmin(permissions.BasePermission):
-
-    def has_permission(self, request, view):
-        return request.user.is_admin
-
-
 class ModeratorOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):

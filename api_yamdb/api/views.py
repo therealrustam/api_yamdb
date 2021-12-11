@@ -100,9 +100,6 @@ class RegistrationView(views.APIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data['email']
         serializer.save(email=email)
-        username = serializer.validated_data['username']
-        if username == 'me':
-            return Response(ME_ERROR, status=status.HTTP_400_BAD_REQUEST)
         user = get_object_or_404(User, email=email)
         self.send_reg_mail(email, user)
         return Response(serializer.data, status=status.HTTP_200_OK)
