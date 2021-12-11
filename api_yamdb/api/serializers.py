@@ -1,8 +1,6 @@
 from django.db.models.aggregates import Avg
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import serializers, status
-from rest_framework.response import Response
+from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
@@ -111,16 +109,12 @@ class TitleReadSerializer(serializers.ModelSerializer):
                        queryset=Genre.objects.all(), many=True)
     category = CategoryField(slug_field='slug',
                              queryset=Category.objects.all(), required=False)
-    rating = serializers.SerializerMethodField()
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'description',
                   'genre', 'category', 'rating',)
-
-    def get_rating(self, obj):
-        rating = obj.reviews.all().aggregate(Avg('score'))['score__avg']
-        return rating
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):

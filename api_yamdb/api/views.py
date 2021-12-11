@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db.models.aggregates import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, views, viewsets
@@ -17,7 +18,8 @@ from reviews.models import Category, Comment, Genre, Review, Title, User
 from .filters import TitleFilter
 from .mixins import CustomViewSet
 from .permissions import (AdminOrReadOnly, AuthorOrReadOnly, IsAdmin,
-                          ModeratorOrReadOnly)
+                          ModeratorOrReadOnly, ReviewCommentPermissions,
+                          TitlePermissions)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, GetAllUserSerializer,
                           GetTokenSerializer, RegistrationSerializer,
@@ -40,6 +42,7 @@ ERROR_CHANGE_EMAIL = {
 USERNAME_NOT_FOUND = {
     'Ошибка': 'Данный пользователь не найден.'
 }
+
 PERMISSIONS_ACTIONS = ('partial_update', 'destroy', 'create')
 
 ME_ERROR = {
@@ -66,10 +69,10 @@ class GetAllUserViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(user)
             return Response(serializer.data)
         if request.method == 'PATCH':
-            if ((request.data.get('role') == 'admin')
+            if ((request.data.get('role') == settings.ADMIN_ROLE)
                     and (self.request.user.role == 'user')):
                 data = deepcopy(request.data)
-                data['role'] = 'user'
+                data['role'] = settings.USER_ROLE
             else:
                 data = request.data
             serializer = self.get_serializer(
@@ -169,8 +172,9 @@ class GenreViewSet(CustomViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
-    permission_classes = (IsAuthenticatedOrReadOnly, )
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')).all()
+    permission_classes = (TitlePermissions,)
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -180,16 +184,10 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleWriteSerializer
         return TitleReadSerializer
 
-    def get_permissions(self):
-        if self.request.user.is_authenticated:
-            if self.action in PERMISSIONS_ACTIONS:
-                return (AdminOrReadOnly(),)
-        return super().get_permissions()
-
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, ]
+    permission_classes = [ReviewCommentPermissions, ]
     pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
@@ -198,21 +196,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         title_id = self.kwargs.get('title_id')
         title = get_object_or_404(Title, id=title_id)
-        new_queryset = Review.objects.filter(title__id=title.id)
+        new_queryset = title.reviews.all()
         return new_queryset
-
-    def get_permissions(self):
-        if self.request.user.is_authenticated:
-            if (self.action == 'partial_update'):
-                return (AuthorOrReadOnly(),)
-            if (self.action == 'destroy'):
-                return (ModeratorOrReadOnly(),)
-        return super().get_permissions()
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, ]
+    permission_classes = [ReviewCommentPermissions, ]
     pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
@@ -221,13 +211,5 @@ class CommentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         review_id = self.kwargs.get('review_id')
         review = get_object_or_404(Review, id=review_id)
-        new_queryset = Comment.objects.filter(review__id=review.id)
+        new_queryset = review.comments.all()
         return new_queryset
-
-    def get_permissions(self):
-        if self.request.user.is_authenticated:
-            if (self.action == 'partial_update'):
-                return (AuthorOrReadOnly(),)
-            if (self.action == 'destroy'):
-                return (ModeratorOrReadOnly(),)
-        return super().get_permissions()

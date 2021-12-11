@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -8,14 +9,14 @@ from django.utils import timezone
 
 
 class User(AbstractUser):
-    USER = 'user'
-    MODERATOR = 'moderator'
-    ADMIN = 'admin'
+    USER = settings.USER_ROLE
+    MODERATOR = settings.MODERATOR_ROLE
+    ADMIN = settings.ADMIN_ROLE
 
     ROLE_CHOISES = [
-        (USER, 'user'),
-        (MODERATOR, 'moderator'),
-        (ADMIN, 'admin')
+        (USER, settings.USER_ROLE),
+        (MODERATOR, settings.MODERATOR_ROLE),
+        (ADMIN, settings.ADMIN_ROLE)
     ]
 
     USERNAME_FIELD = 'username'
@@ -47,11 +48,11 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == 'admin' or self.is_staff
+        return self.role == settings.ADMIN_ROLE or self.is_staff
 
     @property
     def is_moderator(self):
-        return self.role == 'moderator'
+        return self.role == settings.MODERATOR_ROLE
 
     class Meta:
         ordering = ['date_joined']
