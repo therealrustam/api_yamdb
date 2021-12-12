@@ -10,11 +10,11 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Comment, Genre, Review, Title, User
 
+from reviews.models import Category, Genre, Review, Title, User
 from .filters import TitleFilter
 from .mixins import CustomViewSet
-from .permissions import IsAdmin, ReviewCommentPermissions, TitlePermissions
+from .permissions import IsAdmin, ReviewCommentPermissions, AdminOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, GetAllUserSerializer,
                           GetTokenSerializer, RegistrationSerializer,
@@ -37,8 +37,6 @@ ERROR_CHANGE_EMAIL = {
 USERNAME_NOT_FOUND = {
     'Ошибка': 'Данный пользователь не найден.'
 }
-
-PERMISSIONS_ACTIONS = ('partial_update', 'destroy', 'create')
 
 ME_ERROR = {
     'error': 'Данный никнейм выбрать нельзя.'
@@ -65,7 +63,7 @@ class GetAllUserViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         if request.method == 'PATCH':
             if ((request.data.get('role') == settings.ADMIN_ROLE)
-                    and (self.request.user.role == 'user')):
+                    and (self.request.user.role == settings.USER_ROLE)):
                 data = dict(request.data)
                 data['role'] = settings.USER_ROLE
             else:
@@ -137,7 +135,7 @@ class GetTokenView(views.APIView):
 class CategoryViewSet(CustomViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (TitlePermissions,)
+    permission_classes = (AdminOrReadOnly,)
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter, )
@@ -147,7 +145,7 @@ class CategoryViewSet(CustomViewSet):
 class GenreViewSet(CustomViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (TitlePermissions,)
+    permission_classes = (AdminOrReadOnly,)
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
     filter_backends = (filters.SearchFilter, )
@@ -157,13 +155,13 @@ class GenreViewSet(CustomViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')).all()
-    permission_classes = (TitlePermissions,)
+    permission_classes = (AdminOrReadOnly,)
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
-        if (self.action == 'post') or (self.action == 'patch'):
+        if self.request.method in ['POST', 'PATCH']:
             return TitleWriteSerializer
         return TitleReadSerializer
 

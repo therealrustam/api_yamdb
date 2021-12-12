@@ -77,7 +77,7 @@ class Category(models.Model):
     )
 
     def __str__(self):
-        return self.name
+        return self.slug
 
     class Meta:
         verbose_name = 'Категория'
@@ -96,7 +96,7 @@ class Genre(models.Model):
     )
 
     def __str__(self):
-        return self.name
+        return self.slug
 
     class Meta:
         verbose_name = 'Жанр'
@@ -112,7 +112,7 @@ class Title(models.Model):
                 params={'value': value},
             )
 
-    name = models.CharField(
+    name = models.TextField(
         verbose_name='Наименование произведения',
         max_length=256, db_index=True,
     )
@@ -132,15 +132,17 @@ class Title(models.Model):
         related_name='titles',
         verbose_name='Категория',
         db_index=True,
-        on_delete=False,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
     )
-
-    def __str__(self):
-        return self.name
 
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
+
+    def __str__(self):
+        return self.name
 
 
 class Review(models.Model):

@@ -1,5 +1,5 @@
-from django.conf import settings
 from rest_framework import permissions
+
 from reviews.models import Comment, Review
 
 
@@ -12,11 +12,12 @@ class IsAdmin(permissions.BasePermission):
         )
 
 
-class TitlePermissions(permissions.BasePermission):
+class AdminOrReadOnly(permissions.BasePermission):
+
     def has_permission(self, request, view):
-        if request.user.is_authenticated:
-            return request.user.is_admin
-        return request.method in permissions.SAFE_METHODS
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_authenticated and request.user.is_admin
 
 
 class ReviewCommentPermissions(permissions.BasePermission):

@@ -1,6 +1,6 @@
-from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
+
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 from .title import CurrentReviewDefault, CurrentTitleDefault
@@ -72,60 +72,36 @@ class GetTokenSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-
     class Meta:
-        model = Category
         exclude = ('id', )
+        model = Category
         lookup_field = 'slug'
-        extra_kwargs = {
-            'url': {'lookup_field': 'slug'}
-        }
-
-    # def to_representation(self, value):
-    #    result = super(CategorySerializer, self).to_representation(value)
-    #    return result
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Genre
         exclude = ('id', )
+        model = Genre
         lookup_field = 'slug'
-        extra_kwargs = {
-            'url': {'lookup_field': 'slug'}
-        }
-
-    # def to_representation(self, value):
-    #    result = super(GenreSerializer, self).to_representation(value)
-    #    return result
 
 
 class TitleReadSerializer(serializers.ModelSerializer):
-    genre = GenreSerializer(many=True, read_only=True,)
-    category = CategorySerializer(required=False, read_only=True,)
-    rating = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = Title
-        fields = ('id', 'name', 'year', 'description',
-                  'genre', 'category', 'rating',)
-
-
-class TitleWriteSerializer(serializers.ModelSerializer):
-    genre = GenreSerializer(many=True, )
-    category = CategorySerializer(required=True,)
+    genre = GenreSerializer(read_only=True, many=True)
+    category = CategorySerializer(read_only=True)
+    rating = serializers.IntegerField(read_only=True, required=False)
 
     class Meta:
         fields = '__all__'
         model = Title
 
-    def validate(self, data):
-        year = data.get('year')
-        if year > timezone.now().year:
-            raise serializers.ValidationError(
-                'Нельзя указать будущую дату'
-            )
-        return data
+
+class TitleWriteSerializer(TitleReadSerializer):
+    genre = serializers.SlugRelatedField(queryset=Genre.objects.all(),
+                                         slug_field='slug',
+                                         many=True)
+    category = serializers.SlugRelatedField(queryset=Category.objects.all(),
+                                            slug_field='slug',
+                                            )
 
 
 class ReviewSerializer(serializers.ModelSerializer):
