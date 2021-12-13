@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 
 from reviews.models import Category, Comment, Genre, Review, Title, User
-
+from reviews.validators import username_not_me
 from .title import CurrentReviewDefault, CurrentTitleDefault
 
 ERROR_CHANGE_ROLE = {
@@ -10,9 +10,6 @@ ERROR_CHANGE_ROLE = {
 }
 ERROR_CHANGE_EMAIL = {
     'email': 'Невозможно изменить подтвержденный адрес электронной почты.'
-}
-ME_ERROR = {
-    'error': 'Данный никнейм выбрать нельзя.'
 }
 
 
@@ -34,12 +31,6 @@ class GetAllUserSerializer(serializers.ModelSerializer):
             'username': {'required': True},
             'email': {'required': True}
         }
-
-
-def username_not_me(value):
-    me = 'me'
-    if value == me:
-        raise serializers.ValidationError(ME_ERROR)
 
 
 class RegistrationSerializer(serializers.ModelSerializer):

@@ -2,23 +2,21 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils import timezone
+
+from .validators import year_validator
 
 
 class User(AbstractUser):
     USER = settings.USER_ROLE
     MODERATOR = settings.MODERATOR_ROLE
     ADMIN = settings.ADMIN_ROLE
-
     ROLE_CHOISES = [
         (USER, settings.USER_ROLE),
         (MODERATOR, settings.MODERATOR_ROLE),
         (ADMIN, settings.ADMIN_ROLE)
     ]
-
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
 
@@ -48,14 +46,6 @@ class User(AbstractUser):
         editable=False,
     )
 
-    @property
-    def is_admin(self):
-        return self.role == settings.ADMIN_ROLE or self.is_staff
-
-    @property
-    def is_moderator(self):
-        return self.role == settings.MODERATOR_ROLE
-
     class Meta:
         ordering = ['date_joined']
         verbose_name = 'Пользователь'
@@ -63,6 +53,14 @@ class User(AbstractUser):
 
     def __str__(self):
         return str(self.email)
+
+    @property
+    def is_admin(self):
+        return self.role == settings.ADMIN_ROLE or self.is_staff
+
+    @property
+    def is_moderator(self):
+        return self.role == settings.MODERATOR_ROLE
 
 
 class Category(models.Model):
@@ -76,12 +74,12 @@ class Category(models.Model):
         unique=True,
     )
 
-    def __str__(self):
-        return self.slug
-
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
+
+    def __str__(self):
+        return self.slug
 
 
 class Genre(models.Model):
@@ -95,22 +93,15 @@ class Genre(models.Model):
         unique=True,
     )
 
-    def __str__(self):
-        return self.slug
-
     class Meta:
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
 
+    def __str__(self):
+        return self.slug
+
 
 class Title(models.Model):
-
-    def year_validator(value):
-        if value > timezone.now().year:
-            raise ValidationError(
-                ('%(value)s год не должен быть больше нынешнего!'),
-                params={'value': value},
-            )
 
     name = models.TextField(
         verbose_name='Наименование произведения',
@@ -197,10 +188,10 @@ class Comment(models.Model):
         verbose_name='Автор комментария',
     )
 
-    def __str__(self):
-        return self.text
-
     class Meta:
         ordering = ['pub_date']
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
+
+    def __str__(self):
+        return self.text
