@@ -33,7 +33,13 @@
 - Активируйте виртуальное окружение.
 - В виртуальном окружении установите зависимости: pip install -r requirements.txt
 
+## Стек технологий
 
+- Python
+- Django
+- DRF
+- JWT
+- Pytest
 
 ## Примеры
 
@@ -44,4 +50,9 @@
 - [GET] /api/v1/titles/{title_id}/reviews/{review_id}/ - Получить отзыв по id для указанного произведения.
 - [PATCH] /api/v1/titles/{title_id}/reviews/{review_id}/ - Частично обновить отзыв по id.
 - [DELETE] /api/v1/titles/{title_id}/reviews/{review_id}/ - Удалить отзыв по id.
+
+## Авторы
+
+Рустам Вахитов, Наталья Колядина, Николай Павлов 
+
 
